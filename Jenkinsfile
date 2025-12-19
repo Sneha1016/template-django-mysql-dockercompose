@@ -32,16 +32,24 @@ pipeline {
         }
 
         stage('Run Migrations') {
-            steps {
-                sh 'docker compose exec -T web python manage.py migrate'
-            }
-        }
+    steps {
+        sh '''
+        echo "Waiting for web container to be ready..."
+        sleep 20
+        docker exec djangoapp-web-1 python manage.py migrate
+        '''
+    }
+}
+
 
         stage('Collect Static Files') {
-            steps {
-                sh 'docker compose exec -T web python manage.py collectstatic --noinput'
-            }
-        }
+    steps {
+        sh '''
+        docker exec djangoapp-web-1 python manage.py collectstatic --noinput
+        '''
+    }
+}
+
     }
 
     post {
