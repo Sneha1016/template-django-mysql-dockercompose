@@ -1,63 +1,38 @@
 pipeline {
     agent any
 
-    environment {
-        COMPOSE_PROJECT_NAME = "djangoapp"
-    }
-
     stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/Sneha1016/template-django-mysql-dockercompose.git', branch: 'master'
+            }
+        }
 
-        stage('Stop Old Containers') {
+        stage('Down Old Containers') {
             steps {
                 sh 'docker compose down || true'
             }
         }
 
-        stage('Build Images') {
+        stage('Build') {
             steps {
                 sh 'docker compose build'
             }
         }
 
-        stage('Start Containers') {
+        stage('Up') {
             steps {
                 sh 'docker compose up -d'
             }
         }
-
-        stage('Wait for DB') {
-            steps {
-                sh 'sleep 15'
-            }
-        }
-
-        stage('Run Migrations') {
-    steps {
-        sh '''
-        echo "Waiting for web container to be ready..."
-        sleep 20
-        docker exec djangoapp-web-1 python manage.py migrate
-        '''
-    }
-}
-
-
-        stage('Collect Static Files') {
-    steps {
-        sh '''
-        docker exec djangoapp-web-1 python manage.py collectstatic --noinput
-        '''
-    }
-}
-
     }
 
     post {
         success {
-            echo '✅ Jenkins deployment successful'
+            echo '✅ Deployment successful'
         }
         failure {
-            echo '❌ Jenkins deployment failed'
+            echo '❌ Deployment failed'
         }
     }
 }
