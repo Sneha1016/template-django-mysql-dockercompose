@@ -7,13 +7,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
-            steps {
-                git url: 'https://github.com/sin-tanaka/template-django-mysql-dockercompose.git',
-                    branch: 'main'
-            }
-        }
-
         stage('Stop Old Containers') {
             steps {
                 sh 'docker compose down || true'
@@ -53,7 +46,7 @@ pipeline {
 
     post {
         success {
-            echo '✅ Django deployed successfully via Jenkins'
+            echo '✅ Jenkins deployment successful'
         }
         failure {
             echo '❌ Jenkins deployment failed'
