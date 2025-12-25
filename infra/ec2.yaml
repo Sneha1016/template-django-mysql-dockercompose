@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EC2 instance to run Django Docker image from ECR
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to SSH
+
+Resources:
+
+  DjangoEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and HTTP
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  DjangoEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0f5ee92e2d63afc18 # Amazon Linux 2 (Mumbai)
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !Ref DjangoEC2SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          amazon-linux-extras install docker -y
+          service docker start
+          usermod -aG docker ec2-user
+
+          # Install AWS CLI
+          yum install -y awscli
+
+          # Log in to ECR
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 716244586157.dkr.ecr.ap-south-1.amazonaws.com
+
+          # Pull latest Django image
+          docker pull 716244586157.dkr.ecr.ap-south-1.amazonaws.com/django-app:latest
+
+          # Stop old running container if exists
+          docker stop django-app || true
+          docker rm django-app || true
+
+          # Run Django container
+          docker run -d -p 80:8000 --name django-app 716244586157.dkr.ecr.ap-south-1.amazonaws.com/django-app:latest
+
+Outputs:
+  PublicIP:
+    Description: EC2 public IP
+    Value: !GetAtt DjangoEC2.PublicIp
