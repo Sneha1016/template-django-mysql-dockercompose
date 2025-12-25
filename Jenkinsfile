@@ -8,7 +8,7 @@ pipeline {
     }
 
     stages {
-        
+
         stage('Checkout Source') {
             steps {
                 git branch: 'master', url: 'https://github.com/Sneha1016/template-django-mysql-dockercompose.git'
@@ -17,7 +17,10 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t django-app .'
+                sh '''
+                    echo "Building Docker image..."
+                    docker build -t django-app .
+                '''
             }
         }
 
@@ -25,12 +28,20 @@ pipeline {
             steps {
                 withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
                     sh '''
+                        echo "Logging into ECR..."
                         aws ecr get-login-password --region $AWS_REGION \
                         | docker login --username AWS --password-stdin $ECR_REPO
 
+                        echo "Tagging Docker image..."
                         docker tag django-app:latest $ECR_REPO:latest
 
-                        docker push $ECR_REPO:latest
+                        echo "Setting timeouts and retries..."
+                        export DOCKER_CLIENT_TIMEOUT=300
+                        export COMPOSE_HTTP_TIMEOUT=300
+                        export AWS_MAX_ATTEMPTS=5
+
+                        echo "Pushing Docker image with reliability..."
+                        docker push $ECR_REPO:latest --max-concurrent-uploads=1
                     '''
                 }
             }
@@ -40,6 +51,7 @@ pipeline {
             steps {
                 withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
                     sh '''
+                        echo "Deploying EC2 using CloudFormation..."
                         aws cloudformation deploy \
                         --stack-name django-ec2-stack \
                         --template-file infra/ec2.yaml \
@@ -51,3 +63,4 @@ pipeline {
         }
     }
 }
+
