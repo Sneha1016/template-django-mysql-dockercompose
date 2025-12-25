@@ -24,23 +24,24 @@ pipeline {
             }
         }
 
-       stage('Login to ECR & Push Image') {
+  stage('Login to ECR & Push Image') {
     steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
             sh '''
                 echo Logging into ECR...
                 aws ecr get-login-password --region $AWS_REGION \
-                | docker login --username AWS --password-stdin $ECR_REPO
+                | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
                 echo Tagging Docker image...
                 docker tag django-app:latest $ECR_REPO:latest
 
                 echo Pushing Docker image...
-                docker push $ECR_REPO:latest
+                docker push --disable-content-trust=true $ECR_REPO:latest
             '''
         }
     }
 }
+
 
 
         stage('Deploy using CloudFormation') {
