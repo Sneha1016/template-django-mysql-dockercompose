@@ -24,28 +24,24 @@ pipeline {
             }
         }
 
-        stage('Login to ECR & Push Image') {
-            steps {
-                withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-                    sh '''
-                        echo "Logging into ECR..."
-                        aws ecr get-login-password --region $AWS_REGION \
-                        | docker login --username AWS --password-stdin $ECR_REPO
+       stage('Login to ECR & Push Image') {
+    steps {
+        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
+            sh '''
+                echo Logging into ECR...
+                aws ecr get-login-password --region $AWS_REGION \
+                | docker login --username AWS --password-stdin $ECR_REPO
 
-                        echo "Tagging Docker image..."
-                        docker tag django-app:latest $ECR_REPO:latest
+                echo Tagging Docker image...
+                docker tag django-app:latest $ECR_REPO:latest
 
-                        echo "Setting timeouts and retries..."
-                        export DOCKER_CLIENT_TIMEOUT=300
-                        export COMPOSE_HTTP_TIMEOUT=300
-                        export AWS_MAX_ATTEMPTS=5
-
-                        echo "Pushing Docker image with reliability..."
-                        docker push $ECR_REPO:latest --max-concurrent-uploads=1
-                    '''
-                }
-            }
+                echo Pushing Docker image...
+                docker push $ECR_REPO:latest
+            '''
         }
+    }
+}
+
 
         stage('Deploy using CloudFormation') {
             steps {
