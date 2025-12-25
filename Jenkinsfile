@@ -3,11 +3,12 @@ pipeline {
 
     environment {
         AWS_REGION = 'ap-south-1'
-        ECR_REPO = '<YOUR_ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/django-app'
+        ACCOUNT_ID = '716244586157'
+        ECR_REPO = "${ACCOUNT_ID}.dkr.ecr.ap-south-1.amazonaws.com/django-app"
     }
 
     stages {
-
+        
         stage('Checkout Source') {
             steps {
                 git branch: 'master', url: 'https://github.com/Sneha1016/template-django-mysql-dockercompose.git'
@@ -24,13 +25,11 @@ pipeline {
             steps {
                 withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
                     sh '''
-                        # Login to ECR
-                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
-                        
-                        # Tag the image
+                        aws ecr get-login-password --region $AWS_REGION \
+                        | docker login --username AWS --password-stdin $ECR_REPO
+
                         docker tag django-app:latest $ECR_REPO:latest
 
-                        # Push to ECR
                         docker push $ECR_REPO:latest
                     '''
                 }
@@ -52,4 +51,3 @@ pipeline {
         }
     }
 }
-
