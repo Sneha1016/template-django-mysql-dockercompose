@@ -1,5 +1,5 @@
 Resources:
-  DjangoSecurityGroupV2:
+  DjangoSecurityGroupV3:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow SSH and HTTP
@@ -13,7 +13,7 @@ Resources:
           FromPort: 80
           ToPort: 80
 
-  DjangoInstanceRoleV2:
+  DjangoInstanceRoleV3:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -23,24 +23,21 @@ Resources:
             Principal:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
+
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 
-  DjangoInstanceProfileV2:
+  DjangoInstanceProfileV3:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-        - !Ref DjangoInstanceRoleV2
+        - !Ref DjangoInstanceRoleV3
 
-  DjangoEC2InstanceV2:
+  DjangoEC2InstanceV3:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
-      IamInstanceProfile: !Ref DjangoInstanceProfileV2
+      IamInstanceProfile: !Ref DjangoInstanceProfileV3
       SecurityGroupIds:
-        - !Ref DjangoSecurityGroupV2
+        - !Ref DjangoSecurityGroupV3
       ImageId: ami-0ded8326293d3201b
-      Tags:
-        - Key: Name
-          Value: django-ec2-v2
