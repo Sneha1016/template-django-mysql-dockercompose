@@ -1,17 +1,21 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "EC2 for Django Docker App (ECR pull + Docker run)"
+
 Resources:
+
   DjangoSecurityGroupV3:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow SSH and HTTP
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: tcp
+        - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
+          CidrIp: 0.0.0.0/0
 
   DjangoInstanceRoleV3:
     Type: AWS::IAM::Role
@@ -24,8 +28,24 @@ Resources:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
 
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+  DjangoInstancePolicyV3:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: DjangoEC2ECRPolicy
+      Roles:
+        - !Ref DjangoInstanceRoleV3
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - ecr:GetAuthorizationToken
+              - ecr:BatchGetImage
+              - ecr:GetDownloadUrlForLayer
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: "*"
 
   DjangoInstanceProfileV3:
     Type: AWS::IAM::InstanceProfile
@@ -37,7 +57,17 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
-      IamInstanceProfile: !Ref DjangoInstanceProfileV3
+      ImageId: ami-0ded8326293d3201b
       SecurityGroupIds:
         - !Ref DjangoSecurityGroupV3
-      ImageId: ami-0ded8326293d3201b
+      IamInstanceProfile: !Ref DjangoInstanceProfileV3
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt update -y
+          apt install -y docker.io awscli
+          systemctl start docker
+          systemctl enable docker
+          eval $(aws ecr get-login --no-include-email --region ${AWS::Region})
+          docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/django-app:latest
+          docker run -d -p 80:8000 ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/django-app:latest
