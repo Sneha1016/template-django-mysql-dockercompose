@@ -1,8 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "EC2 for Django Docker App (ECR pull + Docker run)"
+Description: EC2 Instance for Django Docker App
 
 Resources:
-
   DjangoSecurityGroupV3:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -18,37 +17,16 @@ Resources:
           CidrIp: 0.0.0.0/0
 
   DjangoInstanceRoleV3:
-  Type: AWS::IAM::Role
-  DeletionPolicy: Retain
-  Properties:
-    RoleName: django-instance-role
-    AssumeRolePolicyDocument:
-      Version: "2012-10-17"
-      Statement:
-        - Effect: Allow
-          Principal:
-            Service: ec2.amazonaws.com
-          Action: sts:AssumeRole
-
-
-  DjangoInstancePolicyV3:
-    Type: AWS::IAM::Policy
+    Type: AWS::IAM::Role
     Properties:
-      PolicyName: DjangoEC2ECRPolicy
-      Roles:
-        - !Ref DjangoInstanceRoleV3
-      PolicyDocument:
+      AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
-            Action:
-              - ecr:GetAuthorizationToken
-              - ecr:BatchGetImage
-              - ecr:GetDownloadUrlForLayer
-              - logs:CreateLogGroup
-              - logs:CreateLogStream
-              - logs:PutLogEvents
-            Resource: "*"
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+    DeletionPolicy: Retain   # <-- this is the magic line that stops deletion
 
   DjangoInstanceProfileV3:
     Type: AWS::IAM::InstanceProfile
@@ -60,22 +38,15 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
-      ImageId: ami-0ded8326293d3201b
+      IamInstanceProfile: !Ref DjangoInstanceProfileV3
       SecurityGroupIds:
         - !Ref DjangoSecurityGroupV3
-      IamInstanceProfile: !Ref DjangoInstanceProfileV3
+      ImageId: ami-0ded8326293d3201b
       UserData:
-        Fn::Base64: !Sub |
+        Fn::Base64: |
           #!/bin/bash
           yum update -y
-          yum install -y docker awscli
+          yum install docker -y
           systemctl start docker
           systemctl enable docker
-
-          # Login to ECR (correct command)
-          aws ecr get-login-password --region ${AWS::Region} \
-          | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
-
-          # Pull and run your Django app
-          docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/django-app:latest
-          docker run -d -p 80:8000 ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/django-app:latest
+          docker run -d -p 80:8000 716244586157.dkr.ecr.ap-south-1.amazonaws.com/django-app:latest
