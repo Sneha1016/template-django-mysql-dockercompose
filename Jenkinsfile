@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_REGION = 'ap-south-1'
         ACCOUNT_ID = '716244586157'
-        ECR_REPO   = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/django-app"
+        ECR_REPO  = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/django-app"
     }
 
     stages {
@@ -28,35 +28,35 @@ pipeline {
             steps {
                 withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
                     sh '''
-                        echo "Logging into ECR..."
+                        echo Logging into ECR...
                         aws ecr get-login-password --region $AWS_REGION \
-                        | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                        | docker login --username AWS --password-stdin $ECR_REPO
 
-                        echo "Tagging Docker image..."
+                        echo Tagging Docker image...
                         docker tag django-app:latest $ECR_REPO:latest
 
-                        echo "Pushing Docker image..."
-                        docker push $ECR_REPO:latest
+                        echo Pushing Docker image...
+                        docker push --disable-content-trust=true $ECR_REPO:latest
                     '''
                 }
             }
         }
-             
-        stage('Deploy using CloudFormation') {
-       steps {
-        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-            sh '''
-                echo Deploying EC2 using CloudFormation...
-                aws cloudformation deploy \
-                --stack-name django-ec2-stack-v2 \
-                --template-file infra/ec2.yaml \
-                --parameter-overrides KeyName=django-key \
-                --capabilities CAPABILITY_NAMED_IAM
 
-                echo Deployment stage completed.
-            '''
+        stage('Deploy using CloudFormation') {
+            steps {
+                withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
+                    sh '''
+                        echo Deploying EC2 using CloudFormation...
+                        aws cloudformation deploy \
+                        --stack-name django-ec2-stack-v2 \
+                        --template-file infra/ec2.yaml \
+                        --parameter-overrides KeyName=django-key \
+                        --capabilities CAPABILITY_NAMED_IAM
+
+                        echo Deployment stage completed.
+                    '''
+                }
+            }
         }
     }
 }
- 
-
