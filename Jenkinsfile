@@ -43,19 +43,18 @@ pipeline {
         }
 
         stage('Deploy using CloudFormation') {
-            steps {
-                withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-                    sh '''
-                    echo Deploying EC2 using CloudFormation...
-
-                    aws cloudformation deploy \
-                        --stack-name $STACK_NAME \
-                        --template-file infra/ec2.yaml \
-                        --parameter-overrides KeyName=django-key \
-                        --capabilities CAPABILITY_NAMED_IAM
-                    '''
-                }
-            }
+    steps {
+        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
+            sh '''
+                echo Deploying EC2 using CloudFormation (no rollback)...
+                aws cloudformation deploy \
+                --stack-name django-ec2-stack-v3 \
+                --template-file infra/ec2.yaml \
+                --parameter-overrides KeyName=django-key \
+                --capabilities CAPABILITY_NAMED_IAM \
+                --disable-rollback
+            '''
         }
     }
 }
+
