@@ -64,10 +64,15 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          apt update -y
-          apt install -y docker.io awscli
+          yum update -y
+          yum install -y docker awscli
           systemctl start docker
           systemctl enable docker
-          eval $(aws ecr get-login --no-include-email --region ${AWS::Region})
+
+          # Login to ECR (correct command)
+          aws ecr get-login-password --region ${AWS::Region} \
+          | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+
+          # Pull and run your Django app
           docker pull ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/django-app:latest
           docker run -d -p 80:8000 ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/django-app:latest
