@@ -23,6 +23,9 @@ Resources:
             Principal:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 
   DjangoInstanceProfileV2:
     Type: AWS::IAM::InstanceProfile
@@ -38,3 +41,6 @@ Resources:
       SecurityGroupIds:
         - !Ref DjangoSecurityGroupV2
       ImageId: ami-0ded8326293d3201b
+      Tags:
+        - Key: Name
+          Value: django-ec2-v2
