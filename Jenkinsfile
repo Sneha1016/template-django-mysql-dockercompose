@@ -49,7 +49,7 @@ pipeline {
                         echo "Deploying EC2 using CloudFormation..."
 
                         aws cloudformation deploy \
-                        --stack-name django-ec2-stack-v3 \
+                        --stack-name django-ec2-stack-v4 \
                         --template-file infra/ec2.yaml \
                         --parameter-overrides KeyName=django-key \
                         --capabilities CAPABILITY_NAMED_IAM \
