@@ -51,7 +51,7 @@ pipeline {
                         aws cloudformation deploy \
                         --stack-name django-ec2-stack-v4 \
                         --template-file infra/ec2.yaml \
-                        --parameter-overrides KeyName=django-key \
+                        ----parameter-overrides KeyName=django-key-v2 \
                         --capabilities CAPABILITY_NAMED_IAM \
                         --no-fail-on-empty-changeset
 
