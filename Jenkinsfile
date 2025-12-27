@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'ap-south-1'
-        ACCOUNT_ID = '716244586157'
-        ECR_REPO = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/django-app"
+        AWS_REGION = "ap-south-1"
+        AWS_ACCOUNT_ID = "716244586157"
+        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/django-app"
     }
 
     stages {
@@ -18,7 +18,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                    echo "Building Docker image..."
+                    echo Building Docker image...
                     docker build -t django-app .
                 '''
             }
@@ -46,21 +46,19 @@ pipeline {
             steps {
                 withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
                     sh '''
-                        echo "Deploying EC2 using CloudFormation..."
+                        echo Deploying EC2 using CloudFormation...
 
                         aws cloudformation deploy \
-                        --stack-name django-ec2-stack-v4 \
+                        --stack-name django-ec2-stack-v5 \
                         --template-file infra/ec2.yaml \
                         --parameter-overrides KeyName=django-key-v2 \
                         --capabilities CAPABILITY_NAMED_IAM \
                         --no-fail-on-empty-changeset
 
-                        echo "Deployment command executed."
+                        echo Deployment done.
                     '''
                 }
             }
         }
-
-    }  // 👈 CLOSE stages
-}      // 👈 CLOSE pipeline
-
+    }
+}
